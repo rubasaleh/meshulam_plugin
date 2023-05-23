@@ -16,8 +16,8 @@ class MethodChannelMeshulamPaymentPlugin extends MeshulamPaymentPluginPlatform {
   }
 
   @override
-  Future<String?> createPaymentCall() async {
-    final version = await methodChannel.invokeMethod<String>('createPaymentCall');
+  Future<String?> createPaymentCall(Map<String, String> params) async {
+    final version = await methodChannel.invokeMethod<String>('createPaymentCall', params);
     return version;
   }
 }

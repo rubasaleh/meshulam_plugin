@@ -6,7 +6,7 @@ class MeshulamPaymentPlugin {
     return MeshulamPaymentPluginPlatform.instance.getPlatformVersion();
   }
 
-  Future<String?> createPaymentCall() {
-    return MeshulamPaymentPluginPlatform.instance.createPaymentCall();
+  Future<String?> createPaymentCall(Map<String, String> params) {
+    return MeshulamPaymentPluginPlatform.instance.createPaymentCall(params);
   }
 }

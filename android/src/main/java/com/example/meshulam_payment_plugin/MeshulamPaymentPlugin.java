@@ -21,6 +21,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MeshulamPaymentPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware {
   private MethodChannel channel;
@@ -38,7 +40,9 @@ public class MeshulamPaymentPlugin implements FlutterPlugin, MethodCallHandler, 
   @Override
   public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
     if (call.method.equals("createPaymentCall")) {
+      Map params = call.arguments();
       pm = new PaymentManager();
+      String reservationId = params.get("reservationId").toString();
       SdkManager.OnPaymentResultListener resultListener = new SdkManager.OnPaymentResultListener() {
         @Override
         public void onGetPaymentData(Bundle bundle) {
@@ -46,27 +50,56 @@ public class MeshulamPaymentPlugin implements FlutterPlugin, MethodCallHandler, 
 
         @Override
         public void onPaymentSuccess(Bundle bundle) {
-          result.success(true);
-        }
-
-        @Override
-        public void onPaymentFailure(Bundle bundle) {
           Runnable httpCall = new Runnable() {
             @Override
             public void run() {
               try {
-                String data = HttpRequestManager.callUrl(
-                    "https://wosh-dev.herokuapp.com/api/meshulam/success?param=b03c2a62-0a94-42df-a539-ded9f039e929");
+                Map<String, String> bodyParams = new HashMap<>();
+                bodyParams.put("reservationId", reservationId);
+                bodyParams.put("customFields", "{\"reservationId\": " + reservationId + "}");
+                bodyParams.put("transactionId", bundle.getString("transaction_id"));
+                bodyParams.put("processId", bundle.getString("process_id"));
+                bodyParams.put("processToken", bundle.getString("process_token"));
+                bodyParams.put("bitPaymentId", bundle.getString("bit_payment_id"));
+                String data = HttpRequestManager.onSuccessHttpRequest(bodyParams);
+
               } catch (ExecutionException e) {
+
                 throw new RuntimeException(e);
               } catch (InterruptedException e) {
+
                 throw new RuntimeException(e);
               }
             }
           };
           Thread newThread = new Thread(httpCall, "Http Call");
-          newThread.run();
-          result.success(false);
+          newThread.start();
+        }
+
+        @Override
+        public void onPaymentFailure(final Bundle bundle) {
+          Runnable httpCall = new Runnable() {
+            @Override
+            public void run() {
+              try {
+                Map<String, String> bodyParams = new HashMap<>();
+                bodyParams.put("reservationId", reservationId);
+                bodyParams.put("processId", bundle.getString("process_id"));
+                bodyParams.put("processToken", bundle.getString("process_token"));
+                bodyParams.put("bitPaymentId", bundle.getString("bit_payment_id"));
+                String data = HttpRequestManager.onFailureHttpRequest(bodyParams);
+
+              } catch (ExecutionException e) {
+
+                throw new RuntimeException(e);
+              } catch (InterruptedException e) {
+
+                throw new RuntimeException(e);
+              }
+            }
+          };
+          Thread newThread = new Thread(httpCall, "Http Call");
+          newThread.start();
         }
 
         @Override
@@ -74,7 +107,7 @@ public class MeshulamPaymentPlugin implements FlutterPlugin, MethodCallHandler, 
 
         }
       };
-      pm.createPaymentCall(activity, resultListener);
+      pm.createPaymentCall(activity, params, resultListener);
     } else {
       result.notImplemented();
     }

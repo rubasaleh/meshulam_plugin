@@ -27,7 +27,7 @@ abstract class MeshulamPaymentPluginPlatform extends PlatformInterface {
     throw UnimplementedError('platformVersion() has not been implemented.');
   }
 
-  Future<String?> createPaymentCall() {
+  Future<String?> createPaymentCall(Map<String, String> params) {
     throw UnimplementedError('createPaymentCall() has not been implemented.');
   }
 }
